@@ -1,0 +1,32 @@
+kind:              Parameterizer
+apiVersion:        kubernetes.sh/v1alpha1
+metadata:
+  name:            install-ghost
+spec:
+  source:
+  - name:          src
+    fromURL:       https://github.com/kubernetes/charts/tree/master/stable/ghost
+    volumeMounts:
+    - name:        chart-input
+      mountPath:   /chart-input
+  userInputs:
+  - name:          helm-user-values
+    source:
+       fromURL:    https://raw.githubusercontent.com/kubernetes/charts/master/stable/ghost/values.yaml
+    volumeMounts:
+    - name:        user-values
+      mountPath:   /helm-values
+  volumes:
+  - name:          chart-input
+    emptyDir:      {}
+  - name:          user-values
+    emptyDir:      {}
+  - name:          output
+    emptyDir:      {}
+  apply:
+  - image:         lachlanevenson/k8s-helm:v2.7.2
+     commands:
+     -  helm template stable/grafana -x templates/deployment.yaml -f /helm-values/value.yaml /output/ghost-resources.yaml
+     volumeMounts:
+     - name:       output
+       mountPath:  /output
