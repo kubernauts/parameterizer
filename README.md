@@ -52,11 +52,11 @@ spec:
     emptyDir: {}
   apply:
   - image: lachlanevenson/k8s-helm:v2.7.2
-     commands:
-     -  helm template stable/grafana -x templates/deployment.yaml -f /helm-values/value.yaml /output/ghost-resources.yaml
-     volumeMounts:
-     - name: output
-       mountPath: /output
+    commands:
+    -  helm template stable/grafana -x templates/deployment.yaml -f /helm-values/value.yaml /output/ghost-resources.yaml
+    volumeMounts:
+    - name: output
+      mountPath: /output
 ```
 
 You can apply the parameters and install the app like so:
