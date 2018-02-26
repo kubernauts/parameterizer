@@ -1,4 +1,6 @@
 # Parameterizer
+[![Go Report Card](https://goreportcard.com/badge/github.com/kubernauts/parameterizer)](https://goreportcard.com/report/github.com/kubernauts/parameterizer)
+[![godoc](https://godoc.org/github.com/kubernauts/parameterizer?status.svg)](https://godoc.org/github.com/kubernauts/parameterizer)
 
 `Parameterizer` is a command line tool and Kubernetes operator for handling application lifecycle management, generically.
 
