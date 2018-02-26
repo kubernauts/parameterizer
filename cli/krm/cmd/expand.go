@@ -3,6 +3,8 @@ package cmd
 import (
 	"fmt"
 
+	log "github.com/Sirupsen/logrus"
+	"github.com/kubernauts/parameterizer/pkg/parameterizer"
 	"github.com/spf13/cobra"
 )
 
@@ -17,7 +19,12 @@ For example:
 
 $ krm expand install-ghost-with-helm.yaml | kubectl apply -f -`,
 	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Println("expand called")
+		p, err := parameterizer.Parse(args[0])
+		if err != nil {
+			log.Error(err)
+			return
+		}
+		fmt.Println(p.Kind)
 	},
 }
 
