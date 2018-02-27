@@ -7,9 +7,13 @@ func TestParse(t *testing.T) {
 	if err != nil {
 		t.Errorf(err.Error())
 	}
-	got := p.Kind
+	got := p
 	want := "Parameterizer"
-	if got != want {
-		t.Errorf("parameterizer.Parse(\"install-ghost-with-helm.yaml\") => %q, want %q", got, want)
+	if got.Kind != want {
+		t.Errorf("parameterizer.Parse(\"install-ghost-with-helm.yaml\") => %q, want %q", got.Kind, want)
+	}
+	want = "kubernetes.sh/v1alpha1"
+	if got.ApiVersion != want {
+		t.Errorf("parameterizer.Parse(\"install-ghost-with-helm.yaml\") => %q, want %q", got.ApiVersion, want)
 	}
 }

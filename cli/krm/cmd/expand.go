@@ -24,7 +24,7 @@ $ krm expand install-ghost-with-helm.yaml | kubectl apply -f -`,
 			log.Error(err)
 			return
 		}
-		fmt.Println(p.Kind)
+		fmt.Printf("%+v\n", p)
 	},
 }
 
