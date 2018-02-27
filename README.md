@@ -52,7 +52,7 @@ spec:
        hostPath:
          path: ./values/prod
     volume:
-      name: helm-user-values
+    - name: helm-user-values
   volumes:
   - name: helm-output
     emptyDir: {medium: ""}
@@ -69,7 +69,7 @@ spec:
       mountPath: /helm-values
   - image: ant31/kinflate
     commands:
-    - bash -c 'cp /output/*.yaml /kinflate/resources/all-resource.yaml && kinflate inflate -f /kinflate'
+    - bash -c 'cp /output/*.yaml" /kinflate/resources/all-resource.yaml" && kinflate inflate -f /kinflate'
     volumeMounts:
     - name: helm-output
       mountPath: /output

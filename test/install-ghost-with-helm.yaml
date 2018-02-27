@@ -23,7 +23,7 @@ spec:
        hostPath:
          path: ./values/prod
     volume:
-      name: helm-user-values
+    - name: helm-user-values
   volumes:
   - name: helm-output
     emptyDir: {medium: ""}
