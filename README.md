@@ -26,7 +26,7 @@ Note that if your `$GOPATH/bin` is in your `$PATH` then now you can use `krm` fr
 
 For example, if you have the following `Parameterizer` resource in a file `install-ghost-with-helm.yaml` ([source](test/install-ghost-with-helm.yaml)):
 
-```
+```yaml
 kind: Parameterizer
 apiVersion: kubernetes.sh/v1alpha1
 metadata:
