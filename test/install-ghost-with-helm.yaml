@@ -3,23 +3,23 @@ apiVersion: kubernetes.sh/v1alpha1
 metadata:
   name: install-ghost
 spec:
-# source of the templates and resources
+  # define the source of the templates and resources:
   resources:
   - name: helm-chart
     source:
       urls:
         - https://github.com/kubernetes/charts/tree/master/stable/ghost
     volume:
-      - name: chart-input
-        hostPath:
-           path: /tmp/  
+      name: chart-input
+      hostPath:
+        path: /tmp/
   - name: local-kinflate
     source:
       hostPath: ./resources/
     volume:
-      - name: kinflate
+      name: kinflate
 
-# define user variables and input to parametrize resources
+  # define the user-provided parameter values:
   userInputs:
   - name: helm-user-values
     source:
@@ -28,10 +28,12 @@ spec:
     volume:
       name: helm-user-values
 
-# Declare extra volumes to be mounted into containers 
+  # optionally declare extra volumes to be mounted into containers:
   volumes:
   - name: helm-output
     emptyDir: {medium: ""}
+
+  # define the actual transformation steps to apply:
   apply:
   - image: lachlanevenson/k8s-helm:v2.7.2
     commands:

@@ -21,7 +21,7 @@ type presource struct {
 	Source struct {
 		URLs []string `yaml:"urls"`
 	} `yaml:"source"`
-	Volume []pvolume `yaml:"volume"`
+	Volume pvolume `yaml:"volume"`
 }
 
 type puserinput struct {
@@ -31,7 +31,7 @@ type puserinput struct {
 			Path string `yaml:"path"`
 		} `yaml:"hostPath,omitempty"`
 	} `yaml:"source"`
-	Volume []pvolume `yaml:"volume"`
+	Volume pvolume `yaml:"volume"`
 }
 
 type pvolume struct {
