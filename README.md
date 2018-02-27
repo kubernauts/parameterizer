@@ -24,6 +24,12 @@ Note that if your `$GOPATH/bin` is in your `$PATH` then now you can use `krm` fr
 
 ## Use
 
+In general, the workflow would be something like:
+
+1. the application author creates the `Parametrizer` manifest along with its package such as a `helm-chart.yaml`.
+1. the operator can then take the `Parametrizer` resource and deploy the application with the installer or deploy manager she wants (e.g. `kubectl`).
+1. in addition to above, the operator can create a new `Parametrizer` resource to chain additional transformations and/or or compose dependencies.
+
 For example, if you have the following `Parameterizer` resource in a file `install-ghost-with-helm.yaml` ([source](test/install-ghost-with-helm.yaml)):
 
 ```yaml
