@@ -9,7 +9,7 @@ spec:
       urls:
         - https://github.com/kubernetes/charts/tree/master/stable/ghost
     volume:
-    - name: helm-chart
+    - name: chart-input
       hostPath:
         path: /tmp/
   - name: local-kinflate
@@ -34,7 +34,7 @@ spec:
     volumeMounts:
     - name: helm-output
       mountPath: /output
-    - name: helm-chart
+    - name: chart-input
       mountPath: /charts
     - name: helm-user-values
       mountPath: /helm-values
