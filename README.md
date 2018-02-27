@@ -82,3 +82,14 @@ You can apply the parameters and install the app like so:
 ```
 $ krm expand install-ghost-with-helm.yaml | kubectl apply -f -
 ```
+
+## Test
+
+For now, just the simple unit-level test in Go (that is, no integration tests yet):
+
+```
+$ cd $GOPATH/src/github.com/kubernauts/parameterizer/pkg/parameterizer
+$ go test
+PASS
+ok      github.com/kubernauts/parameterizer/pkg/parameterizer   0.007s
+```
