@@ -17,7 +17,7 @@ The overall `Parameterizer` architecture is as follows:
 For now we do not provide binaries so you'll need to have [Go](https://golang.org/dl/) installed to use the `krm` CLI tool. We've been testing it using `go1.9.2 darwin/amd64`. To build `krm` from source, do the following:
 
 ```
-$ go get github.com/kubernauts/parameterizer/cmd/krm
+$ go get github.com/kubernauts/parameterizer/cli/krm
 ```
 
 Note that if your `$GOPATH/bin` is in your `$PATH` then now you can use `krm` from everywhere. If not, you can 1) do a `cd $GOPATH/src/github.com/kubernauts/parameterizer/cmd` followed by a `go build` and use it from this directory, or 2) run it using `$GOPATH/bin/krm`.
