@@ -38,49 +38,57 @@ apiVersion: kubernetes.sh/v1alpha1
 metadata:
   name: install-ghost
 spec:
+  # define the source of the templates and resources:
   resources:
   - name: helm-chart
     source:
       urls:
         - https://github.com/kubernetes/charts/tree/master/stable/ghost
     volume:
-    - name: helm-chart
+      name: chart-input
       hostPath:
         path: /tmp/
   - name: local-kinflate
     source:
       hostPath: ./resources/
     volume:
-    - name: kinflate
+      name: kinflate
+
+  # define the user-provided parameter values:
   userInputs:
   - name: helm-user-values
     source:
        hostPath:
          path: ./values/prod
     volume:
-    - name: helm-user-values
+      name: helm-user-values
+
+  # optionally declare extra volumes to be mounted into containers:
   volumes:
   - name: helm-output
     emptyDir: {medium: ""}
+
+  # define the actual transformation steps to apply:
   apply:
   - image: lachlanevenson/k8s-helm:v2.7.2
     commands:
-    -  helm template charts -f /helm-values/value.yaml -o /output/ghost-resources.yaml
+     -  helm template charts -f /helm-values/value.yaml -o /output/ghost-resources.yaml
     volumeMounts:
-    - name: helm-output
-      mountPath: /output
-    - name: helm-chart
-      mountPath: /charts
-    - name: helm-user-values
-      mountPath: /helm-values
+     - name: helm-output
+       mountPath: /output
+     - name: chart-input
+       mountPath: /charts
+     - name: helm-user-values
+       mountPath: /helm-values
   - image: ant31/kinflate
     commands:
-    - bash -c 'cp /output/*.yaml" /kinflate/resources/all-resource.yaml" && kinflate inflate -f /kinflate'
+       - bash -c 'cp /output/*.yaml /kinflate/resources/all-resource.yaml \
+                  && kinflate inflate -f /kinflate'
     volumeMounts:
-    - name: helm-output
-      mountPath: /output
-    - name: local-kinflate
-      mountPath: /kinflate
+     - name: helm-output
+       mountPath: /output
+     - name: kinflate
+       mountPath: /kinflate
 ```
 
 You can apply the parameters and install the app like so:
