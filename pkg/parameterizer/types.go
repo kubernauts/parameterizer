@@ -54,6 +54,7 @@ type pvolume struct {
 
 // papply represents the `apply` sub-resource.
 type papply struct {
+	Name         string   `yaml:"name"`
 	Image        string   `yaml:"image"`
 	Commands     []string `yaml:"commands"`
 	VolumeMounts []struct {
@@ -82,7 +83,8 @@ func (parameterizer Resource) String() string {
 	}
 	buffer.WriteString(fmt.Sprintf(" apply:\n"))
 	for _, a := range parameterizer.Spec.Apply {
-		buffer.WriteString(fmt.Sprintf("  - %v\n", a.Image))
+		buffer.WriteString(fmt.Sprintf("  - %v:\n", a.Name))
+		buffer.WriteString(fmt.Sprintf("    with image [%v] executing commands:\n", a.Image))
 		for _, c := range a.Commands {
 			buffer.WriteString(fmt.Sprintf("    - %v\n", c))
 		}

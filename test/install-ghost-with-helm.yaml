@@ -35,22 +35,24 @@ spec:
 
   # define the actual transformation steps to apply:
   apply:
-  - image: lachlanevenson/k8s-helm:v2.7.2
+  - name: helm-transformation
+    image: lachlanevenson/k8s-helm:v2.7.2
     commands:
      -  helm template charts -f /helm-values/value.yaml -o /output/ghost-resources.yaml
     volumeMounts:
-     - name: helm-output
-       mountPath: /output
-     - name: chart-input
-       mountPath: /charts
-     - name: helm-user-values
-       mountPath: /helm-values
-  - image: ant31/kinflate
+    - name: helm-output
+      mountPath: /output
+    - name: chart-input
+      mountPath: /charts
+    - name: helm-user-values
+      mountPath: /helm-values
+  - name: kinflate-transformation
+    image: ant31/kinflate
     commands:
        - bash -c 'cp /output/*.yaml /kinflate/resources/all-resource.yaml \
                   && kinflate inflate -f /kinflate'
     volumeMounts:
-     - name: helm-output
-       mountPath: /output
-     - name: kinflate
-       mountPath: /kinflate
+    - name: helm-output
+      mountPath: /output
+    - name: kinflate
+      mountPath: /kinflate

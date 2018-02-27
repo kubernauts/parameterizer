@@ -1,9 +1,8 @@
 package cmd
 
 import (
-	"fmt"
-
 	log "github.com/Sirupsen/logrus"
+	"github.com/kubernauts/parameterizer/pkg/executor"
 	"github.com/kubernauts/parameterizer/pkg/parameterizer"
 	"github.com/spf13/cobra"
 )
@@ -24,7 +23,12 @@ $ krm expand install-ghost-with-helm.yaml | kubectl apply -f -`,
 			log.Error(err)
 			return
 		}
-		fmt.Println(p)
+		log.Infof("Parsed a Parameterizer resource from %s with following content:\n%v", args[0], p)
+		err = executor.Run(p)
+		if err != nil {
+			log.Error(err)
+			return
+		}
 	},
 }
 
