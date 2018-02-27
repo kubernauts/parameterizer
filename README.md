@@ -32,33 +32,49 @@ apiVersion: kubernetes.sh/v1alpha1
 metadata:
   name: install-ghost
 spec:
-  source:
-  - name: src
-    fromURL: https://github.com/kubernetes/charts/tree/master/stable/ghost
-    volumeMounts:
-    - name: chart-input
-      mountPath: /chart-input
+  resources:
+  - name: helm-chart
+    source:
+      urls:
+        - https://github.com/kubernetes/charts/tree/master/stable/ghost
+    volume:
+    - name: helm-chart
+      hostPath:
+        path: /tmp/
+  - name: local-kinflate
+    source:
+      hostPath: ./resources/
+    volume:
+    - name: kinflate
   userInputs:
   - name: helm-user-values
     source:
-       fromURL: https://raw.githubusercontent.com/kubernetes/charts/master/stable/ghost/values.yaml
-    volumeMounts:
-    - name: user-values
-      mountPath: /helm-values
+       hostPath:
+         path: ./values/prod
+    volume:
+      name: helm-user-values
   volumes:
-  - name: chart-input
-    emptyDir: {}
-  - name: user-values
-    emptyDir: {}
-  - name: output
-    emptyDir: {}
+  - name: helm-output
+    emptyDir: {medium: ""}
   apply:
   - image: lachlanevenson/k8s-helm:v2.7.2
     commands:
-    -  helm template stable/grafana -x templates/deployment.yaml -f /helm-values/value.yaml /output/ghost-resources.yaml
+    -  helm template charts -f /helm-values/value.yaml -o /output/ghost-resources.yaml
     volumeMounts:
-    - name: output
+    - name: helm-output
       mountPath: /output
+    - name: helm-chart
+      mountPath: /charts
+    - name: helm-user-values
+      mountPath: /helm-values
+  - image: ant31/kinflate
+    commands:
+    - bash -c 'cp /output/*.yaml /kinflate/resources/all-resource.yaml && kinflate inflate -f /kinflate'
+    volumeMounts:
+    - name: helm-output
+      mountPath: /output
+    - name: local-kinflate
+      mountPath: /kinflate
 ```
 
 You can apply the parameters and install the app like so:
