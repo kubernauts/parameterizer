@@ -14,7 +14,6 @@ import (
 // steps as defined in the apply sub-resource.
 func Run(p parameterizer.Resource) (err error) {
 	for _, a := range p.Spec.Apply {
-		fmt.Printf("Using image %v to run commands %v\n", a.Image, a.Commands)
 		// kubectl run -it --rm pexecutor --overrides='
 		// {
 		//   "apiVersion": "batch/v1",
@@ -48,7 +47,16 @@ func Run(p parameterizer.Resource) (err error) {
 		//   }
 		// }
 		// '  -image=$IMAGE --restart=Never -- $COMMAND
-
+		_ = a
+		cmd := []string{"run", "-it", "--rm", "pexecutor",
+			"--image=lachlanevenson/k8s-helm:v2.7.2", "--restart=Never", "--",
+			"version"}
+		fmt.Printf("Executing following command: %v\n", cmd)
+		// res, err := kubectl(true, cmd[0], cmd[1:]...)
+		// if err != nil {
+		// 	return err
+		// }
+		// fmt.Printf("%v", res)
 	}
 	return nil
 }
