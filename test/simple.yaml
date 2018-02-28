@@ -1,0 +1,31 @@
+kind: Parameterizer
+apiVersion: kubernetes.sh/v1alpha1
+metadata:
+  name: simple-helm
+spec:
+  resources:
+  - name: helm-chart
+    source:
+      urls:
+        - https://github.com/kubernetes/charts/tree/master/stable/ghost
+    volume:
+      name: chart-input
+      hostPath:
+        path: /tmp/
+  userInputs:
+  - name: helm-user-values
+    source:
+       hostPath:
+         path: ./values/prod
+    volume:
+      name: helm-user-values
+  apply:
+  - name: helm-transformation
+    image: lachlanevenson/k8s-helm:v2.7.2
+    commands:
+     -  helm template charts -f /helm-values/value.yaml -o /output/ghost-resources.yaml
+    volumeMounts:
+    - name: chart-input
+      mountPath: /charts
+    - name: helm-user-values
+      mountPath: /helm-values
