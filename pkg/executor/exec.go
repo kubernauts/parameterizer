@@ -14,43 +14,9 @@ import (
 // steps as defined in the apply sub-resource.
 func Run(p parameterizer.Resource) (err error) {
 	for _, a := range p.Spec.Apply {
-		// kubectl run -it --rm pexecutor --overrides='
-		// {
-		//   "apiVersion": "batch/v1",
-		//   "spec": {
-		//     "template": {
-		//       "spec": {
-		//         "containers": [
-		//           {
-		//             "name": "$RANDOM",
-		//             "image": "$IMAGE",
-		//             "args": [
-		//               "$COMMAND"
-		//             ],
-		//             "stdin": true,
-		//             "stdinOnce": true,
-		//             "tty": true,
-		//             "volumeMounts": [{
-		//               "mountPath": "$VMP0",
-		//               "name": "$VMN0"
-		//              },
-		//						  ...
-		//            ]
-		//           }
-		//         ],
-		//         "volumes": [{
-		//           "name":"$VMN0",
-		//           "emptyDir":{}
-		//         }]
-		//       }
-		//     }
-		//   }
-		// }
-		// '  -image=$IMAGE --restart=Never -- $COMMAND
-		_ = a
 		cmd := []string{"run", "-it", "--rm", "pexecutor",
-			"--image=lachlanevenson/k8s-helm:v2.7.2", "--restart=Never", "--",
-			"version"}
+			"--image=" + a.Image, "--restart=Never",
+			"--", buildcmds(a.Commands)}
 		fmt.Printf("Executing following command: %v\n", cmd)
 		// res, err := kubectl(true, cmd[0], cmd[1:]...)
 		// if err != nil {
@@ -59,6 +25,15 @@ func Run(p parameterizer.Resource) (err error) {
 		// fmt.Printf("%v", res)
 	}
 	return nil
+}
+
+func buildcmds(cmds []string) string {
+	var res string
+	for _, cmd := range cmds {
+		wocmd := strings.Split(cmd, " ")[1:]
+		res += strings.Join(wocmd, " ") + " && "
+	}
+	return res
 }
 
 func kubectl(withstderr bool, cmd string, args ...string) (string, error) {

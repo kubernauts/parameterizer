@@ -15,15 +15,15 @@ spec:
   userInputs:
   - name: helm-user-values
     source:
-       hostPath:
-         path: ./values/prod
+      urls:
+      - https://raw.githubusercontent.com/kubernetes/charts/master/stable/ghost/values.yaml
     volume:
       name: helm-user-values
   apply:
   - name: helm-transformation
     image: lachlanevenson/k8s-helm:v2.7.2
     commands:
-     -  helm template charts -f /helm-values/value.yaml -o /output/ghost-resources.yaml
+    - helm template charts -f /helm-values/value.yaml -o /output/ghost-resources.yaml
     volumeMounts:
     - name: chart-input
       mountPath: /charts

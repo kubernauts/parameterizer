@@ -37,6 +37,7 @@ type puserinput struct {
 		HostPath struct {
 			Path string `yaml:"path"`
 		} `yaml:"hostPath,omitempty"`
+		URLs []string `yaml:"urls,omitempty"`
 	} `yaml:"source"`
 	Volume pvolume `yaml:"volume"`
 }
@@ -76,6 +77,12 @@ func (parameterizer Resource) String() string {
 	buffer.WriteString(fmt.Sprintf(" user inputs:\n"))
 	for _, u := range parameterizer.Spec.UserInputs {
 		buffer.WriteString(fmt.Sprintf("  - %v\n", u.Name))
+		for _, url := range u.Source.URLs {
+			buffer.WriteString(fmt.Sprintf("    - %v\n", url))
+		}
+		if u.Source.HostPath.Path != "" {
+			buffer.WriteString(fmt.Sprintf("    - %v\n", u.Source.HostPath.Path))
+		}
 	}
 	buffer.WriteString(fmt.Sprintf(" volumes:\n"))
 	for _, v := range parameterizer.Spec.Volumes {
