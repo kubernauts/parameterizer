@@ -14,24 +14,24 @@ type Resource struct {
 		Labels map[string]string `yaml:"labels"`
 	} `yaml:"metadata"`
 	Spec struct {
-		Resources  []presource  `yaml:"resources"`
-		UserInputs []puserinput `yaml:"userInputs"`
-		Volumes    []pvolume    `yaml:"volumes"`
-		Apply      []papply     `yaml:"apply"`
+		Resources  []Presource  `yaml:"resources"`
+		UserInputs []Puserinput `yaml:"userInputs"`
+		Volumes    []Pvolume    `yaml:"volumes"`
+		Apply      []Papply     `yaml:"apply"`
 	} `yaml:"spec"`
 }
 
-// presource represents the `resources` sub-resource.
-type presource struct {
+// Presource represents the `resources` sub-resource.
+type Presource struct {
 	Name   string `yaml:"name"`
 	Source struct {
 		URLs []string `yaml:"urls"`
 	} `yaml:"source"`
-	Volume pvolume `yaml:"volume"`
+	Volume Pvolume `yaml:"volume"`
 }
 
-// puserinput represents the `userInputs` sub-resource.
-type puserinput struct {
+// Puserinput represents the `userInputs` sub-resource.
+type Puserinput struct {
 	Name   string `yaml:"name"`
 	Source struct {
 		HostPath struct {
@@ -39,11 +39,11 @@ type puserinput struct {
 		} `yaml:"hostPath,omitempty"`
 		URLs []string `yaml:"urls,omitempty"`
 	} `yaml:"source"`
-	Volume pvolume `yaml:"volume"`
+	Volume Pvolume `yaml:"volume"`
 }
 
-// pvolume represents the `volume` sub-resource.
-type pvolume struct {
+// Pvolume represents the `volume` sub-resource.
+type Pvolume struct {
 	Name     string `yaml:"name"`
 	HostPath struct {
 		Path string `yaml:"path"`
@@ -53,8 +53,8 @@ type pvolume struct {
 	} `yaml:"emptyDir,omitempty"`
 }
 
-// papply represents the `apply` sub-resource.
-type papply struct {
+// Papply represents the `apply` sub-resource.
+type Papply struct {
 	Name         string   `yaml:"name"`
 	Image        string   `yaml:"image"`
 	Commands     []string `yaml:"commands"`
