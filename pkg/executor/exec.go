@@ -3,6 +3,7 @@ package executor
 import (
 	"bytes"
 	"fmt"
+	"io/ioutil"
 	"os"
 	"os/exec"
 	"strings"
@@ -13,52 +14,59 @@ import (
 // Run executes the Parameterizer resource's transformation
 // steps as defined in the apply sub-resource.
 func Run(p parameterizer.Resource) (err error) {
-	for _, a := range p.Spec.Apply {
-		cmd := []string{"run", "-it", "--rm", "pexecutor",
-			"--image=" + a.Image, "--restart=Never",
-			genoverride(p, a), "--", buildcmds(a.Commands)}
-		fmt.Printf("Executing command: %v\n", cmd)
-		res, err := kubectl(true, cmd[0], cmd[1:]...)
-		if err != nil {
-			return err
-		}
-		fmt.Printf("%v", res)
+	// we create a temporary manifest file with all
+	// the necessary settings in there
+	mf, mc, err := createmanifest(p)
+	if err != nil {
+		return err
 	}
+	mfn := mf.Name()
+	defer func() {
+		e := os.Remove(mfn)
+		if e != nil {
+			fmt.Printf("Couldn't clean up temporary manifest %v", mfn)
+		}
+	}()
+	fmt.Printf("Using manifest:\n%v\n", mc)
+	cmd := []string{"create", "-f", mfn}
+	fmt.Printf("Executing command: %v\n", strings.Join(cmd, " "))
+	res, err := kubectl(true, cmd[0], cmd[1:]...)
+	if err != nil {
+		return err
+	}
+	fmt.Printf("%v\n", res)
 	return nil
 }
 
-func genoverride(p parameterizer.Resource, a parameterizer.Papply) string {
-	otemplate := `--overrides='{ 
-		"apiVersion": "extensions/v1beta1",
-		"spec":{
-			"template":{
-				"spec": {
-					"initContainers":[{
-						"name": "downloadinput",
-						"image": "busybox",
-						"command": "['sh', '-c', 'cd /pall && wget -O i0.zip ` + p.Spec.Resources[0].Source.URLs[0] + ` && unzip i0.zip' ]",
-						"volumeMounts": [{
-              				"mountPath": "/pall",
-              				"name": "all"
-            			}]
-					}],
-					"containers":[{
-						"name": "` + a.Name + `",
-						"image": "` + a.Image + `",
-						"volumeMounts": [{
-              				"mountPath": "/pall",
-              				"name": "all"
-            			}]
-					}],
-					"volumes": [{
-          				"name":"all",
-          				"emptyDir":{}
-        			}]
-				}
-			}
+func createmanifest(p parameterizer.Resource) (*os.File, string, error) {
+	content := []byte(`
+		{
+    	"kind": "Pod",
+    	"apiVersion": "v1",
+    	"metadata": {
+        	"name": "pexecutor"
+    	},
+    	"spec": {
+        	"containers": [
+            {
+                "name": "` + p.Spec.Apply[0].Name + `",
+                "image": "lachlanevenson/k8s-helm:v2.7.2"
+            }
+        ]
+    	}
 		}
-	}'`
-	return otemplate
+	`)
+	tmpf, err := ioutil.TempFile("/tmp", "krm")
+	if err != nil {
+		return nil, "", err
+	}
+	if _, err := tmpf.Write(content); err != nil {
+		return nil, "", err
+	}
+	if err := tmpf.Close(); err != nil {
+		return nil, "", err
+	}
+	return tmpf, string(content), nil
 }
 
 func buildcmds(cmds []string) string {
