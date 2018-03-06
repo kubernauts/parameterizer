@@ -7,6 +7,7 @@ import (
 	"os"
 	"os/exec"
 	"strings"
+	"time"
 
 	"github.com/kubernauts/parameterizer/pkg/parameterizer"
 )
@@ -35,27 +36,49 @@ func Run(p parameterizer.Resource) (err error) {
 		return err
 	}
 	fmt.Printf("%v\n", res)
+	time.Sleep(1 * time.Minute)
+	res, err = kubectl(true, "get", "po", "-a")
+	if err != nil {
+		return err
+	}
+	fmt.Printf("%v\n", res)
+	res, err = kubectl(true, "logs", "pexecutor")
+	if err != nil {
+		return err
+	}
+	fmt.Printf("%v\n", res)
+	res, err = kubectl(true, "delete", "po", "pexecutor", "--force")
+	if err != nil {
+		return err
+	}
+	fmt.Printf("%v\n", res)
 	return nil
 }
 
 func createmanifest(p parameterizer.Resource) (*os.File, string, error) {
-	content := []byte(`
-		{
-    	"kind": "Pod",
-    	"apiVersion": "v1",
-    	"metadata": {
-        	"name": "pexecutor"
-    	},
-    	"spec": {
-        	"containers": [
-            {
-                "name": "` + p.Spec.Apply[0].Name + `",
-                "image": "lachlanevenson/k8s-helm:v2.7.2"
-            }
-        ]
-    	}
-		}
-	`)
+	content := []byte(`apiVersion: v1
+kind: Pod
+metadata:
+  name: pexecutor
+spec: 
+  initContainers:
+  - name: resinput
+    image: alpine:3.7
+    command: ["sh", "-c", "wget -O /work/charts.zip ` + p.Spec.Resources[0].Source.URLs[0] + ` && unzip /work/charts.zip" ]
+    volumeMounts:
+    - name: pmr
+      mountPath: "/work"
+  containers:
+  - name: ` + p.Spec.Apply[0].Name + `
+    image: ` + p.Spec.Apply[0].Image + `
+    command: ["sh", "-c", "` + p.Spec.Apply[0].Commands[0] + `" ]
+    volumeMounts:
+    - name: pmr 
+      mountPath: "/work" 
+  volumes:
+  - name: pmr
+    hostPath:
+      path: /tmp/pmr`)
 	tmpf, err := ioutil.TempFile("/tmp", "krm")
 	if err != nil {
 		return nil, "", err

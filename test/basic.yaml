@@ -1,0 +1,21 @@
+kind: Parameterizer
+apiVersion: kubernetes.sh/v1alpha1
+metadata:
+  name: basic
+spec:
+  resources:
+  - name: helm-chart
+    source:
+      urls:
+        - https://github.com/kubernetes/charts/archive/master.zip
+    volume:
+      name: inputv
+  apply:
+  - name: show
+    image: alpine:3.7
+    commands:
+    - "ls /work"
+    volumeMounts:
+    - name: inputv
+      mountPath: "/work"
+  

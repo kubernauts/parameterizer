@@ -9,23 +9,20 @@ spec:
       urls:
         - https://github.com/kubernetes/charts/archive/master.zip
     volume:
-      name: chart-input
-      hostPath:
-        path: /pall
+      name: inputv
   userInputs:
-  - name: helm-user-values
+  - name: input
     source:
       urls:
       - https://raw.githubusercontent.com/kubernetes/charts/master/stable/ghost/values.yaml
     volume:
-      name: helm-user-values
+      name: inputv
   apply:
   - name: helm-transformation
     image: lachlanevenson/k8s-helm:v2.7.2
     commands:
-    - helm template charts -f /pall/value.yaml -o /pall/ghost-resources.yaml
+    - "template /work/charts-master/stable/ghost/ -f /work/charts-master/stable/ghost/value.yaml -o /work/ghost-resources.yaml"
     volumeMounts:
-    - name: chart-input
-      mountPath: /pall
-    - name: helm-user-values
-      mountPath: /pall
+    - name: inputv
+      mountPath: "/work"
+  
