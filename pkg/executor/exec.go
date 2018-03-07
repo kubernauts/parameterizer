@@ -64,7 +64,7 @@ spec:
   initContainers:
   - name: resinput
     image: alpine:3.7
-    command: ["sh", "-c", "wget -O /work/charts.zip ` + p.Spec.Resources[0].Source.URLs[0] + ` && unzip /work/charts.zip" ]
+    command: ["sh", "-c", "wget -O /work/charts.zip ` + p.Spec.Resources[0].Source.URLs[0] + ` && unzip /work/charts.zip -d /work" ]
     volumeMounts:
     - name: pmr
       mountPath: "/work"
