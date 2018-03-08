@@ -45,17 +45,17 @@ type UserInputSpec struct {
 
 // TransformationSpec represents the `apply` sub-resource.
 type TransformationSpec struct {
+	Name      string                 `json:"name"`
 	Container v1.Container           `json:"container,omitempty"`
 	Helm      HelmTransformationSpec `json:"helm,omitempty"`
 }
 
 type HelmTransformationSpec struct {
-	Repo      string            `json:"repo"`
-	Chart     string            `json:"chart"`
-	Version   string            `json:"version"`
-	ValueFile string            `json:"valueFile,omitempty"`
-	SetArgs   map[string]string `json:"setArgs,omitempty"`
-	ExtraOpts []string          `json:"extraOpts,omitempty"`
+	Chart        string            `json:"chart"`
+	ValueFile    string            `json:"valueFile,omitempty"`
+	SetArgs      map[string]string `json:"setArgs,omitempty"`
+	ExtraOpts    []string          `json:"extraOpts,omitempty"`
+	VolumeMounts []v1.VolumeMount  `json:"volumeMounts,omitempty"`
 }
 
 func (parameterizer Parameterizer) String() string {

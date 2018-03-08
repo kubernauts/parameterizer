@@ -1,0 +1,45 @@
+kind: Parameterizer
+apiVersion: kubernetes.sh/v1alpha1
+metadata:
+  name: basic
+spec:
+  resources:
+  - name: helm-chart
+    source:
+      fetch:
+        urls:
+          - https://github.com/kubernetes/charts/archive/master.zip
+        dest: /charts
+    volumeMounts:
+      - name: inputv
+        mountPath: /charts
+  userInputs:
+  - name: helm-chart-values
+    source:
+      container:
+        image: alpine
+        command:
+          - wget
+          - https://raw.githubusercontent.com/kubernetes/charts/master/stable/ghost/Chart.yaml
+          - -P
+          - /charts
+    volumeMounts:
+      - name: inputv
+        mountPath: /charts
+  volumes:
+    - name: inputv
+      emptyDir: {medium: ""}
+
+  transformations:
+  - name: helm-prom-operator
+    helm:
+      chart: /charts/prometheus-operator-0.0.11.tgz
+      valueFile: /charts/value.yaml
+      setArgs:
+        Tag: 'foo'
+      extraOpts:
+        - "-n"
+        - "demo"
+    volumeMounts:
+    - name: inputv
+      mountPath: "/charts"

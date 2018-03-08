@@ -6,6 +6,7 @@ import (
 	"github.com/kubernauts/parameterizer/pkg/parameterizer"
 	"io/ioutil"
 	// "k8s.io/api/apps/v1beta1"
+	"github.com/kubernauts/parameterizer/pkg/executor/transformers"
 	"github.com/pborman/uuid"
 	"k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -100,8 +101,14 @@ func createResourceContainers(name string, resources []parameterizer.ResourceSpe
 
 func createTransformationContainers(name string, transformations []parameterizer.TransformationSpec) []v1.Container {
 	initContainers := []v1.Container{}
+	container := v1.Container{}
 	for _, transformation := range transformations {
-		initContainers = append(initContainers, transformation.Container)
+		if transformation.Helm.Chart != "" {
+			container = transformers.HelmTransform(&transformation)
+		} else {
+			container = transformation.Container
+		}
+		initContainers = append(initContainers, container)
 	}
 	return initContainers
 }
