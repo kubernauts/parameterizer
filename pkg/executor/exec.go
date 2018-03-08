@@ -3,21 +3,25 @@ package executor
 import (
 	"bytes"
 	"fmt"
+	"github.com/kubernauts/parameterizer/pkg/parameterizer"
 	"io/ioutil"
+	// "k8s.io/api/apps/v1beta1"
+	"github.com/pborman/uuid"
+	"k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
 	"os"
 	"os/exec"
 	"strings"
 	"time"
-
-	"github.com/kubernauts/parameterizer/pkg/parameterizer"
 )
 
 // Run executes the Parameterizer resource's transformation
 // steps as defined in the apply sub-resource.
-func Run(p parameterizer.Resource) (err error) {
+func Run(p parameterizer.Parameterizer) (err error) {
 	// we create a temporary manifest file with all
 	// the necessary settings in there
-	mf, mc, err := createmanifest(p)
+	podName, mf, mc, err := createmanifest(p)
 	if err != nil {
 		return err
 	}
@@ -42,12 +46,17 @@ func Run(p parameterizer.Resource) (err error) {
 		return err
 	}
 	fmt.Printf("%v\n", res)
-	res, err = kubectl(true, "logs", "pexecutor")
+	res, err = kubectl(true, "logs", podName)
 	if err != nil {
 		return err
 	}
 	fmt.Printf("%v\n", res)
-	res, err = kubectl(true, "delete", "po", "pexecutor", "--force")
+	res, err = kubectl(true, "logs", strings.Split(res, " ")...)
+	if err != nil {
+		return err
+	}
+	fmt.Printf("%v\n", res)
+	res, err = kubectl(true, "delete", "po", podName, "--force")
 	if err != nil {
 		return err
 	}
@@ -55,41 +64,96 @@ func Run(p parameterizer.Resource) (err error) {
 	return nil
 }
 
-func createmanifest(p parameterizer.Resource) (*os.File, string, error) {
-	content := []byte(`apiVersion: v1
-kind: Pod
-metadata:
-  name: pexecutor
-spec: 
-  initContainers:
-  - name: resinput
-    image: alpine:3.7
-    command: ["sh", "-c", "wget -O /work/charts.zip ` + p.Spec.Resources[0].Source.URLs[0] + ` && unzip /work/charts.zip -d /work" ]
-    volumeMounts:
-    - name: pmr
-      mountPath: "/work"
-  containers:
-  - name: ` + p.Spec.Apply[0].Name + `
-    image: ` + p.Spec.Apply[0].Image + `
-    command: ["sh", "-c", "` + p.Spec.Apply[0].Commands[0] + `" ]
-    volumeMounts:
-    - name: pmr 
-      mountPath: "/work" 
-  volumes:
-  - name: pmr
-    hostPath:
-      path: /tmp/pmr`)
+func generateName(name string) string {
+	return "krm-exec-" + name + "-" + uuid.NewUUID().String()[0:8]
+}
+
+func fetchSourceContainer(source parameterizer.SourceSpec) (string, []string) {
+	image := ""
+	command := []string{}
+
+	if source.Container.Image != "" {
+		image = source.Container.Image
+		command = source.Container.Command
+	} else if len(source.Fetch.URLs) > 0 {
+		image = "alpine:3.7"
+		command = []string{"sh", "-c", "wget -P " + source.Fetch.Dest + " " + source.Fetch.URLs[0]}
+	}
+
+	return image, command
+}
+
+func createResourceContainers(name string, resources []parameterizer.ResourceSpec) []v1.Container {
+	initContainers := []v1.Container{}
+
+	for _, resource := range resources {
+		image, command := fetchSourceContainer(resource.Source)
+		container := v1.Container{
+			Name:         resource.Name,
+			Image:        image,
+			Command:      command,
+			VolumeMounts: resource.VolumeMounts}
+		initContainers = append(initContainers, container)
+	}
+	return initContainers
+}
+
+func createTransformationContainers(name string, transformations []parameterizer.TransformationSpec) []v1.Container {
+	initContainers := []v1.Container{}
+	for _, transformation := range transformations {
+		initContainers = append(initContainers, transformation.Container)
+	}
+	return initContainers
+}
+
+func createPod(p *parameterizer.Parameterizer) *v1.Pod {
+	name := generateName(p.ObjectMeta.Name)
+	sourceContainers := createResourceContainers(name, p.Spec.Resources)
+	userInputContainers := createResourceContainers(name, p.Spec.UserInputs)
+	transformationContainers := createTransformationContainers(name, p.Spec.Transformations)
+	initContainers := append(sourceContainers, userInputContainers...)
+	initContainers = append(initContainers, transformationContainers...)
+	volumes := p.Spec.Volumes
+	container := v1.Container{
+		Name:    "krm-result",
+		Image:   "alpine:3.7",
+		Command: []string{"echo", name + " -c " + initContainers[len(initContainers)-1].Name},
+	}
+	pod := &v1.Pod{
+		TypeMeta: metav1.TypeMeta{
+			APIVersion: "v1",
+			Kind:       "Pod",
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name: name,
+		},
+		Spec: v1.PodSpec{
+			InitContainers: initContainers,
+			Volumes:        volumes,
+			Containers:     []v1.Container{container},
+		},
+	}
+	return pod
+}
+
+func createmanifest(p parameterizer.Parameterizer) (string, *os.File, string, error) {
+	pod := createPod(&p)
+	podName := pod.ObjectMeta.Name
+	content, err := MarshallObj(pod, "yaml")
+	if err != nil {
+		return podName, nil, "", err
+	}
 	tmpf, err := ioutil.TempFile("/tmp", "krm")
 	if err != nil {
-		return nil, "", err
+		return podName, nil, "", err
 	}
 	if _, err := tmpf.Write(content); err != nil {
-		return nil, "", err
+		return podName, nil, "", err
 	}
 	if err := tmpf.Close(); err != nil {
-		return nil, "", err
+		return podName, nil, "", err
 	}
-	return tmpf, string(content), nil
+	return podName, tmpf, string(content), nil
 }
 
 func buildcmds(cmds []string) string {

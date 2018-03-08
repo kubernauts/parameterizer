@@ -17,7 +17,7 @@ func TestParse(t *testing.T) {
 		t.Errorf("parameterizer.Parse(\"install-ghost-with-helm.yaml\") => %q, want %q", got.APIVersion, want)
 	}
 	want = "install-ghost"
-	if got.Metadata.Name != want {
-		t.Errorf("parameterizer.Parse(\"install-ghost-with-helm.yaml\") => %q, want %q", got.Metadata.Name, want)
+	if got.ObjectMeta.Name != want {
+		t.Errorf("parameterizer.Parse(\"install-ghost-with-helm.yaml\") => %q, want %q", got.ObjectMeta.Name, want)
 	}
 }

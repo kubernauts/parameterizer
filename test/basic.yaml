@@ -6,16 +6,38 @@ spec:
   resources:
   - name: helm-chart
     source:
-      urls:
-        - https://github.com/kubernetes/charts/archive/master.zip
-    volume:
-      name: inputv
-  apply:
-  - name: show
-    image: alpine:3.7
-    commands:
-    - "ls /work"
+      fetch:
+        urls:
+          - https://github.com/kubernetes/charts/archive/master.zip
+        dest: /charts
     volumeMounts:
+      - name: inputv
+        mountPath: /charts
+  userInputs:
+  - name: helm-chart-values
+    source:
+      container:
+        image: alpine
+        command:
+          - wget
+          - https://raw.githubusercontent.com/kubernetes/charts/master/stable/ghost/Chart.yaml
+          - -P
+          - /charts
+    volumeMounts:
+      - name: inputv
+        mountPath: /charts
+  volumes:
     - name: inputv
-      mountPath: "/work"
-  
+      emptyDir: {medium: ""}
+
+  transformations:
+  - container:
+      name: show
+      image: alpine:3.7
+      command:
+      - sh
+      - -c
+      - "unzip /charts/master.zip -d /charts &&  ls -lR /charts"
+      volumeMounts:
+      - name: inputv
+        mountPath: "/charts"
