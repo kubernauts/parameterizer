@@ -3,85 +3,76 @@ package parameterizer
 import (
 	"bytes"
 	"fmt"
+	"k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-// Resource represents the `Parameterizer` resource.
-type Resource struct {
-	Kind       string `yaml:"kind"`
-	APIVersion string `yaml:"apiVersion"`
-	Metadata   struct {
-		Name   string            `yaml:"name"`
-		Labels map[string]string `yaml:"labels"`
-	} `yaml:"metadata"`
-	Spec struct {
-		Resources  []Presource  `yaml:"resources"`
-		UserInputs []Puserinput `yaml:"userInputs"`
-		Volumes    []Pvolume    `yaml:"volumes"`
-		Apply      []Papply     `yaml:"apply"`
-	} `yaml:"spec"`
+// Parameterizer represents the `Parameterizer` resource.
+type Parameterizer struct {
+	metav1.TypeMeta   `json:",inline"`
+	metav1.ObjectMeta `json:"metadata,omitempty"`
+	Spec              PSpec `json:"spec"`
 }
 
-// Presource represents the `resources` sub-resource.
-type Presource struct {
-	Name   string `yaml:"name"`
-	Source struct {
-		URLs []string `yaml:"urls"`
-	} `yaml:"source"`
-	Volume Pvolume `yaml:"volume"`
+// PSpec parameterizer Spec
+type PSpec struct {
+	Resources       []ResourceSpec       `json:"resources"`
+	UserInputs      []ResourceSpec       `json:"userInputs,omitempty"`
+	Volumes         []v1.Volume          `json:"volumes,omitempty"`
+	Transformations []TransformationSpec `json:"transformations"`
 }
 
-// Puserinput represents the `userInputs` sub-resource.
-type Puserinput struct {
-	Name   string `yaml:"name"`
-	Source struct {
-		HostPath struct {
-			Path string `yaml:"path"`
-		} `yaml:"hostPath,omitempty"`
-		URLs []string `yaml:"urls,omitempty"`
-	} `yaml:"source"`
-	Volume Pvolume `yaml:"volume"`
+// SourceSpec represents resource location
+type SourceSpec struct {
+	Container v1.Container `json:"container,omitempty"`
+	Fetch     struct {
+		URLs []string `json:"urls,omitempty"`
+		Dest string   `json:"dest"`
+	} `json:"fetch,omitempty"`
 }
 
-// Pvolume represents the `volume` sub-resource.
-type Pvolume struct {
-	Name     string `yaml:"name"`
-	HostPath struct {
-		Path string `yaml:"path"`
-	} `yaml:"hostPath,omitempty"`
-	EmptyDir struct {
-		Path string `yaml:"path"`
-	} `yaml:"emptyDir,omitempty"`
+// ResourceSpec represents the `resources` sub-resource.
+type ResourceSpec struct {
+	Name         string           `json:"name"`
+	Source       SourceSpec       `json:"source"`
+	VolumeMounts []v1.VolumeMount `json:"volumeMounts"`
 }
 
-// Papply represents the `apply` sub-resource.
-type Papply struct {
-	Name         string   `yaml:"name"`
-	Image        string   `yaml:"image"`
-	Commands     []string `yaml:"commands"`
-	VolumeMounts []struct {
-		Name      string `yaml:"name"`
-		mountPath string `yaml:"mountPath"`
-	} `yaml:"volumeMounts"`
+// UserInputSpec represents the `userInputs` sub-resource.
+type UserInputSpec struct {
+	ResourceSpec `json:",inline"`
 }
 
-func (parameterizer Resource) String() string {
+// TransformationSpec represents the `apply` sub-resource.
+type TransformationSpec struct {
+	Container v1.Container           `json:"container,omitempty"`
+	Helm      HelmTransformationSpec `json:"helm,omitempty"`
+}
+
+type HelmTransformationSpec struct {
+	Repo      string            `json:"repo"`
+	Chart     string            `json:"chart"`
+	Version   string            `json:"version"`
+	ValueFile string            `json:"valueFile,omitempty"`
+	SetArgs   map[string]string `json:"setArgs,omitempty"`
+	ExtraOpts []string          `json:"extraOpts,omitempty"`
+}
+
+func (parameterizer Parameterizer) String() string {
 	var buffer bytes.Buffer
-	buffer.WriteString(fmt.Sprintf("Parameterizer {\n name: %v\n", parameterizer.Metadata.Name))
+	buffer.WriteString(fmt.Sprintf("Parameterizer {\n name: %v\n", parameterizer.ObjectMeta.Name))
 	buffer.WriteString(fmt.Sprintf(" resources:\n"))
 	for _, r := range parameterizer.Spec.Resources {
 		buffer.WriteString(fmt.Sprintf("  - %v\n", r.Name))
-		for _, u := range r.Source.URLs {
+		for _, u := range r.Source.Fetch.URLs {
 			buffer.WriteString(fmt.Sprintf("    - %v\n", u))
 		}
 	}
 	buffer.WriteString(fmt.Sprintf(" user inputs:\n"))
 	for _, u := range parameterizer.Spec.UserInputs {
 		buffer.WriteString(fmt.Sprintf("  - %v\n", u.Name))
-		for _, url := range u.Source.URLs {
+		for _, url := range u.Source.Fetch.URLs {
 			buffer.WriteString(fmt.Sprintf("    - %v\n", url))
-		}
-		if u.Source.HostPath.Path != "" {
-			buffer.WriteString(fmt.Sprintf("    - %v\n", u.Source.HostPath.Path))
 		}
 	}
 	buffer.WriteString(fmt.Sprintf(" volumes:\n"))
@@ -89,10 +80,10 @@ func (parameterizer Resource) String() string {
 		buffer.WriteString(fmt.Sprintf("  - %v\n", v.Name))
 	}
 	buffer.WriteString(fmt.Sprintf(" apply:\n"))
-	for _, a := range parameterizer.Spec.Apply {
-		buffer.WriteString(fmt.Sprintf("  - %v:\n", a.Name))
-		buffer.WriteString(fmt.Sprintf("    with image [%v] executing commands:\n", a.Image))
-		for _, c := range a.Commands {
+	for _, a := range parameterizer.Spec.Transformations {
+		buffer.WriteString(fmt.Sprintf("  - %v:\n", a.Container.Name))
+		buffer.WriteString(fmt.Sprintf("    with image [%v] executing commands:\n", a.Container.Image))
+		for _, c := range a.Container.Command {
 			buffer.WriteString(fmt.Sprintf("    - %v\n", c))
 		}
 	}

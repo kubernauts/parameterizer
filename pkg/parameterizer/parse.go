@@ -3,12 +3,12 @@ package parameterizer
 import (
 	"io/ioutil"
 
-	yaml "gopkg.in/yaml.v2"
+	yaml "github.com/ghodss/yaml"
 )
 
 // Parse parses a Parameterizer resource from a YAML file.
-func Parse(filename string) (p Resource, err error) {
-	p = Resource{}
+func Parse(filename string) (p Parameterizer, err error) {
+	p = Parameterizer{}
 	pfile, err := ioutil.ReadFile(filename)
 	if err != nil {
 		return p, err
