@@ -156,7 +156,7 @@
   branch = "master"
   name = "golang.org/x/crypto"
   packages = ["ssh/terminal"]
-  revision = "85f98707c97e11569271e4d9b3d397e079c4f4d0"
+  revision = "c7dcf104e3a7a1417abc0230cb0d5240d764159d"
 
 [[projects]]
   branch = "master"
@@ -214,7 +214,10 @@
 [[projects]]
   branch = "master"
   name = "k8s.io/api"
-  packages = ["core/v1"]
+  packages = [
+    "batch/v1",
+    "core/v1"
+  ]
   revision = "fd252c3a3e1debf912ff5b80221a31a6a3c24493"
 
 [[projects]]
@@ -248,6 +251,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "56c3a24ff99f9ba56c3d34c94bd49648885288e14fa31c3cacfb9f545ef8b95b"
+  inputs-digest = "568037b2c5feba72ab14ebfe3c9f9a18c9c86e1510546fcb49dddfb5b35dcdaa"
   solver-name = "gps-cdcl"
   solver-version = 1

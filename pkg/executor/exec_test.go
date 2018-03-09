@@ -14,7 +14,7 @@ func TestRun(t *testing.T) {
 func TestCreatePod(t *testing.T) {
 	p, err := parameterizer.Parse("../../test/basic.yaml")
 	require.NoError(t, err)
-	pod := createPod(&p)
+	pod := CreatePod(&p)
 	want := "krm-exec-" + p.ObjectMeta.Name
 	if !strings.HasPrefix(pod.ObjectMeta.Name, want) {
 		t.Fatal("Pod name must start with " + want + ", got: " + pod.ObjectMeta.Name)
@@ -25,7 +25,7 @@ func TestCreatePod(t *testing.T) {
 func TestCreatePodHelmSpec(t *testing.T) {
 	p, err := parameterizer.Parse("../../test/basic-helmspec.yaml")
 	require.NoError(t, err)
-	pod := createPod(&p)
+	pod := CreatePod(&p)
 	want := "krm-exec-" + p.ObjectMeta.Name
 	if !strings.HasPrefix(pod.ObjectMeta.Name, want) {
 		t.Fatal("Pod name must start with " + want + ", got: " + pod.ObjectMeta.Name)

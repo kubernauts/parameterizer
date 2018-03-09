@@ -61,14 +61,15 @@ type HelmRepo struct {
 }
 
 type HelmChart struct {
-	Name    string   `json:"name"`
+	Name    string   `json:"name,omitempty"`
+	Path    string   `json:"path,omitempty"`
 	Version string   `json:"version,omitempty"`
 	Repo    HelmRepo `json:"repo,omitempty"`
 }
 
 type HelmTransformationSpec struct {
 	Chart        HelmChart        `json:"chart"`
-	ReleaseName  string           `json:"releaseName,omitempty"	`
+	ReleaseName  string           `json:"releaseName,omitempty"`
 	ValueFiles   []string         `json:"valueFiles,omitempty"`
 	SetValues    []NamedValue     `json:"setValues,omitempty"`
 	ExtraOpts    []string         `json:"extraOpts,omitempty"`
