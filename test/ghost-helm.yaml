@@ -1,0 +1,14 @@
+kind: Parameterizer
+apiVersion: kubernetes.sh/v1alpha1
+metadata:
+  name: basic
+spec:
+  transformations:
+  - name: helm-prom-operator
+    helm:
+      chart:
+        name: stable/ghost
+      releaseName: g1
+      extraOpts:
+          - "--namespace"
+          - "demo"

@@ -6,23 +6,51 @@ import (
 	"github.com/kubernauts/parameterizer/pkg/parameterizer"
 	"io/ioutil"
 	// "k8s.io/api/apps/v1beta1"
+	"github.com/ghodss/yaml"
 	"github.com/kubernauts/parameterizer/pkg/executor/transformers"
 	"github.com/pborman/uuid"
+	batchv1 "k8s.io/api/batch/v1"
 	"k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-
 	"os"
 	"os/exec"
 	"strings"
-	"time"
 )
+
+// returns the pod name once the job is completed
+func waitJobToComplete(job string) error {
+	completed := false
+	var o batchv1.Job
+
+	for !completed {
+		res, err := kubectl(true, "get", "jobs", "-o", "yaml", job)
+		if err != nil {
+			return err
+		}
+		err = yaml.Unmarshal([]byte(res), &o)
+		if err != nil {
+			return err
+		}
+		completed = o.Status.Succeeded > 0 || o.Status.Failed > 0
+	}
+
+	return nil
+}
+
+func getJobPodName(job string) string {
+	res, _ := kubectl(true, "get", "pods",
+		"--show-all",
+		"--selector=job-name="+job,
+		"--output=jsonpath={.items..metadata.name}")
+	return res
+}
 
 // Run executes the Parameterizer resource's transformation
 // steps as defined in the apply sub-resource.
 func Run(p parameterizer.Parameterizer) (err error) {
 	// we create a temporary manifest file with all
 	// the necessary settings in there
-	podName, mf, mc, err := createmanifest(p)
+	jobName, mf, mc, err := createmanifest(p)
 	if err != nil {
 		return err
 	}
@@ -33,35 +61,37 @@ func Run(p parameterizer.Parameterizer) (err error) {
 			fmt.Printf("Couldn't clean up temporary manifest %v", mfn)
 		}
 	}()
-	fmt.Printf("Using manifest:\n%v\n", mc)
+	fmt.Fprintf(os.Stderr, "Using manifest:\n%v\n", mc)
 	cmd := []string{"create", "-f", mfn}
-	fmt.Printf("Executing command: %v\n", strings.Join(cmd, " "))
+	fmt.Fprintf(os.Stderr, "Executing command: %v\n", strings.Join(cmd, " "))
 	res, err := kubectl(true, cmd[0], cmd[1:]...)
 	if err != nil {
 		return err
 	}
-	fmt.Printf("%v\n", res)
-	time.Sleep(1 * time.Minute)
-	res, err = kubectl(true, "get", "po", "-a")
+	fmt.Fprintf(os.Stderr, "%v\n", res)
+	fmt.Fprintf(os.Stderr, "Waiting for Job %s to complete....", jobName)
+	err = waitJobToComplete(jobName)
 	if err != nil {
 		return err
 	}
-	fmt.Printf("%v\n", res)
+	podName := getJobPodName(jobName)
+
+	fmt.Fprintf(os.Stderr, "%s\n", podName)
 	res, err = kubectl(true, "logs", podName)
 	if err != nil {
 		return err
 	}
-	fmt.Printf("%v\n", res)
-	res, err = kubectl(true, "logs", strings.Split(res, " ")...)
+	fmt.Fprintf(os.Stderr, "%v\n", res)
+	res, err = kubectl(true, "logs", podName, "-c", res)
 	if err != nil {
 		return err
 	}
 	fmt.Printf("%v\n", res)
-	res, err = kubectl(true, "delete", "po", podName, "--force")
-	if err != nil {
-		return err
-	}
-	fmt.Printf("%v\n", res)
+	// res, err = kubectl(true, "delete", "po", podName, "--force")
+	// if err != nil {
+	// 	return err
+	// }
+	// fmt.Printf("%v\n", res)
 	return nil
 }
 
@@ -113,7 +143,7 @@ func createTransformationContainers(name string, transformations []parameterizer
 	return initContainers
 }
 
-func createPod(p *parameterizer.Parameterizer) *v1.Pod {
+func CreatePod(p *parameterizer.Parameterizer) *batchv1.Job {
 	name := generateName(p.ObjectMeta.Name)
 	sourceContainers := createResourceContainers(name, p.Spec.Resources)
 	userInputContainers := createResourceContainers(name, p.Spec.UserInputs)
@@ -124,28 +154,32 @@ func createPod(p *parameterizer.Parameterizer) *v1.Pod {
 	container := v1.Container{
 		Name:    "krm-result",
 		Image:   "alpine:3.7",
-		Command: []string{"echo", name + " -c " + initContainers[len(initContainers)-1].Name},
+		Command: []string{"echo", initContainers[len(initContainers)-1].Name},
 	}
-	pod := &v1.Pod{
+	pod := &batchv1.Job{
 		TypeMeta: metav1.TypeMeta{
-			APIVersion: "v1",
-			Kind:       "Pod",
+			APIVersion: "batch/v1",
+			Kind:       "Job",
 		},
-
 		ObjectMeta: metav1.ObjectMeta{
 			Name: name,
 		},
-		Spec: v1.PodSpec{
-			InitContainers: initContainers,
-			Volumes:        volumes,
-			Containers:     []v1.Container{container},
+		Spec: batchv1.JobSpec{
+			Template: v1.PodTemplateSpec{
+				Spec: v1.PodSpec{
+					RestartPolicy:  "Never",
+					InitContainers: initContainers,
+					Volumes:        volumes,
+					Containers:     []v1.Container{container},
+				},
+			},
 		},
 	}
 	return pod
 }
 
 func createmanifest(p parameterizer.Parameterizer) (string, *os.File, string, error) {
-	pod := createPod(&p)
+	pod := CreatePod(&p)
 	podName := pod.ObjectMeta.Name
 	content, err := MarshallObj(pod, "yaml")
 	if err != nil {
