@@ -50,12 +50,29 @@ type TransformationSpec struct {
 	Helm      HelmTransformationSpec `json:"helm,omitempty"`
 }
 
+type NamedValue struct {
+	Name  string `json:"name"`
+	Value string `json:"value"`
+}
+
+type HelmRepo struct {
+	URL  string `json:"url"`
+	Name string `json:"name"`
+}
+
+type HelmChart struct {
+	Name    string   `json:"name"`
+	Version string   `json:"version,omitempty"`
+	Repo    HelmRepo `json:"repo,omitempty"`
+}
+
 type HelmTransformationSpec struct {
-	Chart        string            `json:"chart"`
-	ValueFile    string            `json:"valueFile,omitempty"`
-	SetArgs      map[string]string `json:"setArgs,omitempty"`
-	ExtraOpts    []string          `json:"extraOpts,omitempty"`
-	VolumeMounts []v1.VolumeMount  `json:"volumeMounts,omitempty"`
+	Chart        HelmChart        `json:"chart"`
+	ReleaseName  string           `json:"releaseName,omitempty"	`
+	ValueFiles   []string         `json:"valueFiles,omitempty"`
+	SetValues    []NamedValue     `json:"setValues,omitempty"`
+	ExtraOpts    []string         `json:"extraOpts,omitempty"`
+	VolumeMounts []v1.VolumeMount `json:"volumeMounts,omitempty"`
 }
 
 func (parameterizer Parameterizer) String() string {

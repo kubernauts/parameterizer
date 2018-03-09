@@ -103,7 +103,7 @@ func createTransformationContainers(name string, transformations []parameterizer
 	initContainers := []v1.Container{}
 	container := v1.Container{}
 	for _, transformation := range transformations {
-		if transformation.Helm.Chart != "" {
+		if transformation.Helm.Chart.Name != "" {
 			container = transformers.HelmTransform(&transformation)
 		} else {
 			container = transformation.Container
@@ -131,6 +131,7 @@ func createPod(p *parameterizer.Parameterizer) *v1.Pod {
 			APIVersion: "v1",
 			Kind:       "Pod",
 		},
+
 		ObjectMeta: metav1.ObjectMeta{
 			Name: name,
 		},
