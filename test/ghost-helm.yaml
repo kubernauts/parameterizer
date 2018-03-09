@@ -9,6 +9,3 @@ spec:
       chart:
         name: stable/ghost
       releaseName: g1
-      extraOpts:
-          - "--namespace"
-          - "demo"
