@@ -114,6 +114,14 @@ func fetchSourceContainer(source parameterizer.SourceSpec) (string, []string) {
 			wget = append(wget, "wget -P "+source.Fetch.Dest+" "+value)
 		}
 		command = append(command, strings.Join(wget, "&&"))
+	} else if len(source.Files) > 0 {
+		image = "busybox"
+		command = []string{"sh", "-c"}
+		cmd := []string{}
+		for _, file := range source.Files {
+			cmd = append(cmd, "echo \""+file.Content+"\">"+file.Dest)
+		}
+		command = append(command, strings.Join(cmd, "&&"))
 	}
 
 	return image, command

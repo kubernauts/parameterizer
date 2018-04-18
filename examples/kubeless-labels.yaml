@@ -1,0 +1,65 @@
+kind: Parameterizer
+apiVersion: kubernetes.sh/v1alpha1
+metadata:
+  name: install-kubeless
+spec:
+  resources:
+  - name: kustomize
+    source:
+      container:
+        name: kustomize
+        image: busybox
+        command:
+        - sh
+        - -c
+        - |
+          echo "namePrefix: 'pdemo-'
+          # Labels to add to all objects and selectors.
+          # These labels would also be used to form the selector for apply --prune
+          # Named differently than “labels” to avoid confusion with metadata for this object
+          commonLabels:
+            app.kubernetes.io/name: kubeless
+            app.kubernetes.io/version: v0.5.0
+          resources:
+            - kubeless.yaml " > /resources/kustomization.yaml
+    volumeMounts:
+      - mountPath: /resources
+        name: kubeless-input
+
+  - name: kubeless-jsonnet
+    source:
+      fetch:
+        urls:
+          - https://raw.githubusercontent.com/kubeless/kubeless/master/kubeless.jsonnet
+          - https://raw.githubusercontent.com/kubeless/kubeless/master/kubeless-non-rbac.jsonnet
+        dest: /resources
+    volumeMounts:
+      - name: kubeless-input
+        mountPath: /resources
+
+  volumes:
+  - name: kubeless-input
+    emptyDir: {medium: ""}
+
+  transformations:
+  - container:
+      name: ksonnet
+      image: quay.io/ant31/ksonnet
+      command:
+        - sh
+        - -c
+        - "kubecfg show -o yaml /resources/kubeless.jsonnet > /resources/kubeless.yaml"
+      volumeMounts:
+        - name: kubeless-input
+          mountPath: /resources
+
+  - container:
+      name: kustomize-build
+      image: quay.io/ant31/kustomize
+      command:
+        - kustomize
+        - build
+        - /resources
+      volumeMounts:
+        - name: kubeless-input
+          mountPath: /resources

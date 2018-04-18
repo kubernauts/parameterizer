@@ -1,0 +1,66 @@
+kind: Parameterizer
+apiVersion: kubernetes.sh/v1alpha1
+metadata:
+  name: basic
+spec:
+  resources:
+    - name: input
+      source:
+        files:
+          ## Inject labels to all resources
+          - dest: /resources/kustomization.yaml
+            content: |
+              namePrefix: 'dev-'
+              commonLabels:
+                app.kubernetes.io/name: grafana
+                app.kubernetes.io/version: v5.0-master
+              resources:
+                - resources.yaml
+          ## Configure the helm values
+          - dest: /resources/values.yaml
+            content: |
+              server:
+                image: "grafana/grafana:master"
+                adminUser: ant31
+      volumeMounts:
+        - mountPath: /resources
+          name: input
+
+  # Create a volume to store intermediate states and inputs
+  volumes:
+    - name: input
+      emptyDir: {medium: ""}
+
+  # Transformation Pipeline
+  transformations:
+    - name: grafana-helm
+      helm:
+        chart:
+          name: stable/grafana
+        releaseName: g1
+        valueFiles:
+          - /resources/values.yaml
+        outputFile: /resources/resources.yaml
+        volumeMounts:
+          - mountPath: /resources
+            name: input
+
+    - name: cat
+      container:
+        name: cat
+        image: busybox
+        command:
+          - cat
+          - /resources/resources.yaml
+
+    # - name: kustomize
+    #   container:
+    #     name: kustomize
+    #     image: quay.io/ant31/kustomize
+    #     command:
+    #       - kustomize
+    #       - build
+    #       - /resources
+        volumeMounts:
+          - name: input
+            mountPath: /resources
