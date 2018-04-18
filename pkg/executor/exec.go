@@ -108,7 +108,12 @@ func fetchSourceContainer(source parameterizer.SourceSpec) (string, []string) {
 		command = source.Container.Command
 	} else if len(source.Fetch.URLs) > 0 {
 		image = "alpine:3.7"
-		command = []string{"sh", "-c", "wget -P " + source.Fetch.Dest + " " + source.Fetch.URLs[0]}
+		command = []string{"sh", "-c"}
+		wget := []string{}
+		for _, value := range source.Fetch.URLs {
+			wget = append(wget, "wget -P "+source.Fetch.Dest+" "+value)
+		}
+		command = append(command, strings.Join(wget, "&&"))
 	}
 
 	return image, command

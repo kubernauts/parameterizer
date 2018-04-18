@@ -13,6 +13,7 @@ spec:
     volumeMounts:
       - name: inputv
         mountPath: /charts
+
   userInputs:
   - name: helm-chart-values
     source:
