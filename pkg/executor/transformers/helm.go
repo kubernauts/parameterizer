@@ -73,7 +73,9 @@ func HelmTransform(t *parameterizer.TransformationSpec) v1.Container {
 	} else if t.Helm.Chart.Path != "" {
 		cmd = append(cmd, helmTemplate(t, t.Helm.Chart.Path)...)
 	}
-
+	if t.Helm.OutputFile != "" {
+		cmd[len(cmd)-1] = cmd[len(cmd)-1] + ">" + t.Helm.OutputFile
+	}
 	container := v1.Container{
 		Image:        "quay.io/wire/alpine-helm",
 		Command:      cmd,

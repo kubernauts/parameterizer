@@ -25,7 +25,11 @@ type PSpec struct {
 // SourceSpec represents resource location
 type SourceSpec struct {
 	Container v1.Container `json:"container,omitempty"`
-	Fetch     struct {
+	Files     []struct {
+		Dest    string `json:"dest"`
+		Content string `json:"content"`
+	} `json:"files,omitempty"`
+	Fetch struct {
 		URLs []string `json:"urls,omitempty"`
 		Dest string   `json:"dest"`
 	} `json:"fetch,omitempty"`
@@ -74,6 +78,7 @@ type HelmTransformationSpec struct {
 	SetValues    []NamedValue     `json:"setValues,omitempty"`
 	ExtraOpts    []string         `json:"extraOpts,omitempty"`
 	VolumeMounts []v1.VolumeMount `json:"volumeMounts,omitempty"`
+	OutputFile   string           `json:"outputFile,omitempty"`
 }
 
 func (parameterizer Parameterizer) String() string {
