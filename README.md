@@ -34,73 +34,49 @@ In general, the workflow would be something like:
 1. the operator can then take the `Parametrizer` resource and deploy the application with the installer or deploy manager she wants (e.g. `kubectl`).
 1. in addition to above, the operator can create a new `Parametrizer` resource to chain additional transformations and/or or compose dependencies.
 
-For example, if you have the following `Parameterizer` resource in a file `install-ghost-with-helm.yaml` ([source](test/install-ghost-with-helm.yaml)):
+For example, if you have the following `Parameterizer` resource in a file `kubeless.yaml` ([source](examples/kubeless.yaml)):
 
 ```yaml
 kind: Parameterizer
 apiVersion: kubernetes.sh/v1alpha1
 metadata:
-  name: install-ghost
+  name: install-kubeless
 spec:
-  # define the source of the templates and resources:
   resources:
-  - name: helm-chart
+  - name: kubeless-jsonnet
     source:
-      urls:
-        - https://github.com/kubernetes/charts/tree/master/stable/ghost
-    volume:
-      name: chart-input
-      hostPath:
-        path: /tmp/
-  - name: local-kinflate
-    source:
-      hostPath: ./resources/
-    volume:
-      name: kinflate
+      fetch:
+        urls:
+          - https://raw.githubusercontent.com/kubeless/kubeless/master/kubeless.jsonnet
+          - https://raw.githubusercontent.com/kubeless/kubeless/master/kubeless-non-rbac.jsonnet
+        dest: /resources
+    volumeMounts:
+      - name: kubeless-input
+        mountPath: /resources
 
-  # define the user-provided parameter values:
-  userInputs:
-  - name: helm-user-values
-    source:
-       hostPath:
-         path: ./values/prod
-    volume:
-      name: helm-user-values
-
-  # optionally declare extra volumes to be mounted into containers:
   volumes:
-  - name: helm-output
+  - name: kubeless-input
     emptyDir: {medium: ""}
 
-  # define the actual transformation steps to apply:
-  apply:
-  - name: helm-transformation
-    image: lachlanevenson/k8s-helm:v2.7.2
-    commands:
-     -  helm template charts -f /helm-values/value.yaml -o /output/ghost-resources.yaml
-    volumeMounts:
-    - name: helm-output
-      mountPath: /output
-    - name: chart-input
-      mountPath: /charts
-    - name: helm-user-values
-      mountPath: /helm-values
-  - name: kinflate-transformation
-    image: ant31/kinflate
-    commands:
-       - bash -c 'cp /output/*.yaml /kinflate/resources/all-resource.yaml \
-                  && kinflate inflate -f /kinflate'
-    volumeMounts:
-    - name: helm-output
-      mountPath: /output
-    - name: kinflate
-      mountPath: /kinflate
+  transformations:
+  - container:
+      name: ksonnet
+      image: quay.io/ant31/ksonnet
+      command:
+        - kubecfg
+        - show
+        - -o
+        - yaml
+        - /resources/kubeless.jsonnet
+      volumeMounts:
+        - name: kubeless-input
+          mountPath: /resources
 ```
 
 You can apply the parameters and install the app like so:
 
 ```
-$ krm expand install-ghost-with-helm.yaml | kubectl apply -f -
+$ krm expand kubeless.yaml | kubectl apply -f -
 ```
 
 ## Test
